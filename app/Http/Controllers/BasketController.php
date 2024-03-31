@@ -5,9 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Basket\BasketStoreRequest;
 use App\Models\Basket;
 use App\Models\Product;
-use Illuminate\Contracts\View\Factory;
-use Illuminate\Contracts\View\View;
-use Illuminate\Foundation\Application;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -17,13 +14,13 @@ class BasketController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function add(Request $request, Product $product): RedirectResponse
+    public function add(Request $request, Product $product, Basket $basket): RedirectResponse
     {
         $basketId = $request->cookie('basket_id');
         $quantity = $request->input('quantity') ?? 1;
         if (empty($basketId)) {
             // если корзина еще не существует — создаем объект
-            $basket = Basket::query()->create();
+            //$basket = Basket::query()->create();
             $quantity = $basket->products()->updateExistingPivot(
                 'product_id',
                 ['quantity', $quantity]
@@ -52,9 +49,11 @@ class BasketController extends Controller
     /**
      * Увеличивает кол-во товара $id в корзине на единицу
      */
-    public function plus(Request $request, int $id): RedirectResponse
+//    public function plus(Request $request, int $id): RedirectResponse
+    public function plus(int $id): RedirectResponse
     {
-        $basketId = $request->cookie('basket_id');
+//        $this->basketId->$request->cookie('basket_id');
+        $this->basketId->cookie('basket_id');
         if (empty($basketId)) {
             abort(404);
         }
@@ -81,13 +80,6 @@ class BasketController extends Controller
             ->withCookie(cookie('basket_id', $basketId, 525600));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
 
     /**
      * Store a newly created resource in storage.
@@ -95,13 +87,14 @@ class BasketController extends Controller
     public function store(BasketStoreRequest $request): Basket
     {
         $data = $request->validated();
-
-        $image = $data ['image'];
-        $imageName = Str::random(40) . '.' . $image->getClientOriginalExtension();
-        $image->move(
-            storage_path() . '/app/public/basket/images',
-            $imageName
-        );
+        foreach($data['image'] as $image) {
+//        $image = $data ['image'];
+            $imageName = Str::random(40) . '.' . $image->getClientOriginalExtension();
+            $image->move(
+                storage_path() . '/app/public/basket/images',
+                $imageName
+            );
+        }
 
         $basket = new Basket();
 
@@ -112,55 +105,36 @@ class BasketController extends Controller
         $basket->quantity = $data['quantity'];
 
         $basket->save();
+        $this->store($basket);
 
         return $basket;
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(basket $basket)
-    {
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(basket $basket)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, basket $basket)
-    {
-        //
-    }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(basket $basket)
+    public function destroy(Basket $basketId): RedirectResponse
     {
-        //
-    }
+        $basketId->delete();
 
-    public function remove($id): RedirectResponse
-    {
-        $this->basketId->remove($id);
-        // выполняем редирект обратно на страницу корзины
         return redirect()->route('basket.index');
     }
 
-    /**
-     * Полностью очищает содержимое корзины покупателя
-     */
-    public function clear(): RedirectResponse
-    {
-        $this->basketId->delete();
-        // выполняем редирект обратно на страницу корзины
-        return redirect()->route('basket.index');
-    }
+//    public function remove($id): RedirectResponse
+//    {
+//        $this->basketId->remove($id);
+//        // выполняем редирект обратно на страницу корзины
+//        return redirect()->route('basket.index');
+//    }
+//
+//    /**
+//     * Полностью очищает содержимое корзины покупателя
+//     */
+//    public function clear(): RedirectResponse
+//    {
+//        $this->basketId->delete();
+//        // выполняем редирект обратно на страницу корзины
+//        return redirect()->route('basket.index');
+//    }
 }
